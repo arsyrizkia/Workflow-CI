@@ -1,0 +1,11 @@
+name: heart-disease-ci
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      data_path: {type: string, default: "heart_disease_preprocessing/heart_preprocessed.csv"}
+      n_estimators: {type: float, default: 300}
+      max_depth: {type: float, default: 10}
+    command: "python modelling.py --data_path {data_path} --n_estimators {n_estimators} --max_depth {max_depth}"

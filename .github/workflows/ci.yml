@@ -1,0 +1,61 @@
+name: CI Retraining Model
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install mlflow==2.19.0 scikit-learn==1.9.0 pandas==2.3.3 numpy==2.5.1
+
+      - name: Run MLflow Project (re-training model)
+        run: mlflow run MLProject --env-manager=local
+
+      - name: Read run_id
+        id: run
+        run: echo "run_id=$(cat MLProject/run_id.txt)" >> "$GITHUB_OUTPUT"
+
+      # Skilled: menyimpan artefak run ke repositori
+      - name: Upload mlruns as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlruns-artifacts
+          path: MLProject/mlruns
+
+      - name: Commit trained model artifacts to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add MLProject/artifacts
+          git diff --cached --quiet || git commit -m "chore: update trained model artifacts [skip ci]"
+          git push
+
+      # Advanced: build & push Docker image dengan mlflow build-docker
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image (mlflow models build-docker)
+        run: mlflow models build-docker --model-uri MLProject/artifacts/model --name ${{ secrets.DOCKERHUB_USERNAME }}/heart-disease-model
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/heart-disease-model ${{ secrets.DOCKERHUB_USERNAME }}/heart-disease-model:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/heart-disease-model:latest
