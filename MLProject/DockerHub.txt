@@ -1,0 +1,5 @@
+Tautan Docker Hub (image hasil mlflow models build-docker):
+https://hub.docker.com/r/arsyrizkia/heart-disease-model
+
+Pull image:
+docker pull arsyrizkia/heart-disease-model:latest
