@@ -52,6 +52,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # mlflow 2.19 menghasilkan Dockerfile berbasis python3.9 yang gagal dengan
+      # get-pip.py terbaru (butuh Python >= 3.10) — pakai mlflow terbaru khusus
+      # untuk langkah build image (format model tetap kompatibel).
+      - name: Upgrade MLflow for build-docker
+        run: pip install --upgrade "mlflow>=3.1"
+
       - name: Build Docker image (mlflow models build-docker)
         run: mlflow models build-docker --model-uri MLProject/artifacts/model --name ${{ secrets.DOCKERHUB_USERNAME }}/heart-disease-model
 
